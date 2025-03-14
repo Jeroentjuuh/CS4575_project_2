@@ -1,7 +1,7 @@
 #!/bin/bash
 # List of repository URLs (add as many as you need)
 declare -a repos=(
-  "https://github.com/apache/cassandra.git"
+  #"https://github.com/apache/cassandra.git"
   "https://github.com/apache/camel.git"
   "https://github.com/apache/accumulo.git"
   "https://github.com/1c-syntax/bsl-language-server.git"
