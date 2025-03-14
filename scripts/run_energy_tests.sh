@@ -37,7 +37,8 @@ do
     # Check if it's a Maven project
     if [ -f "pom.xml" ]; then
         echo "$project: Detected Maven project." | tee -a ../../logs/"$project"_energy.log
-        mvn clean test >> ../../logs/"$project"_energy.log 2>&1
+        mvn clean test -Dmaven.compiler.failOnWarning=false >> ../../logs/"$project"_energy.log 2>&1
+
 
     # Else check if it's a Gradle project
     elif [ -f "build.gradle" ] || [ -f "build.gradle.kts" ]; then
