@@ -18,6 +18,15 @@ if __name__ == "__main__":
     Path("./external_projects").mkdir(exist_ok=True)
     Path("./logs").mkdir(exist_ok=True)
 
+    # Build joularjx
+	joularjx_dir = Path(os.getcwd(), "joularjx")
+	run(["git", "clone", "https://github.com/joular/joularjx.git", joularjx_dir])
+	os.chdir(joularjx_dir)
+	r = run("mvn clean install -DskipTests", shell=True)
+	joularjx_path = Path(joularjx_dir, "target", list(filter(lambda x: x.endswith(".jar") and "joularjx" in x, os.listdir(Path(joularjx_dir, "target"))))[0])
+	print(f"JoularJX path: {joularjx_path}")
+	os.chdir(joularjx_dir.parents[0])
+
     for repo in repos:
         project = Path(repo).stem
         project_dir = Path(os.getcwd(), "external_projects", project)
