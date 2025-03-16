@@ -7,8 +7,7 @@ repos = [
     "https://github.com/junit-team/junit4.git",
     "https://github.com/togglz/togglz.git",
     "https://github.com/julianhyde/sqlline.git",
-    "https://github.com/okta/okta-spring-boot.git",
-    "https://github.com/apache/mina-sshd.git"
+    "https://github.com/okta/okta-spring-boot.git"
 ]
 
 # Number of times to run each test for averaging energy measurements
