@@ -48,7 +48,7 @@ if __name__ == "__main__":
         if Path("pom.xml").exists():
             print("Detected Maven project")
             # Use the built joularjx jar as a wrapper for Maven
-            energy_command = [str(joularjx_path), "mvn", "clean", "test"]
+            energy_command = ["java", "-jar", str(joularjx_path), "mvn", "clean", "test"]
         elif Path("build.gradle").exists() or Path("build.gradle.kts").exists():
             print("Detected Gradle project")
             energy_command = [str(joularjx_path), "gradle", "clean", "test"]
