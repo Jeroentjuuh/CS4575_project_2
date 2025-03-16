@@ -47,12 +47,24 @@ if __name__ == "__main__":
 
 			# https://stackoverflow.com/questions/46302636/maven-test-and-javaagent-argument
 			# -javaagent:/home/roelof/Repositories/CS4575_project_2/joularjx/target/joularjx-3.0.1.jar
-			# tree = ET.parse('pom.xml')
-			# plugins = tree.findall("plugin")
-			# for p in plugins:
-			# 	print(p)
-
-			# exit(0)
+			tree = ET.parse(Path(project_dir, "pom.xml"))
+			prefix = tree.getroot().tag.replace("project", "")
+			ET.register_namespace("", prefix[1:-1])
+			tree = ET.parse(Path(project_dir, "pom.xml"))
+			for plugin in tree.iter(f"{prefix}plugin"):
+				artifactId = plugin.find(f"{prefix}artifactId").text
+				if "maven-surefire-plugin" in artifactId:
+					if plugin.find(f"{prefix}configuration") is None:
+						plugin.append(ET.Element(f"{prefix}configuration"))
+					configuration = plugin.find(f"{prefix}configuration")
+					if configuration.find(f"{prefix}argLine") is None:
+						configuration.append(ET.Element(f"{prefix}argLine"))
+					argLine = plugin.find(f"{prefix}configuration/{prefix}argLine")
+					if argLine.text is None:
+						argLine.text = f"-javaagent:\"{joularjx_path}\""
+					elif "joularjx" not in argLine.text.lower():
+						argLine.text = f"-javaagent:\"{joularjx_path}\" {argLine.text}"
+			tree.write("pom.xml")
 
 			with open(log_path, "w") as outfile:
 				r = run("mvn clean test", shell=True, stdout=outfile, stderr=outfile)
