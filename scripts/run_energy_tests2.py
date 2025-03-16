@@ -47,11 +47,14 @@ if __name__ == "__main__":
 
         if Path("pom.xml").exists():
             print("Detected Maven project")
-            # Use the built joularjx jar as a wrapper for Maven
-            energy_command = ["java", "-jar", str(joularjx_path), "mvn", "clean", "test"]
+            # Set MAVEN_OPTS to attach the joularjx agent
+            os.environ["MAVEN_OPTS"] = f"-javaagent:{str(joularjx_path)}"
+            energy_command = ["mvn", "clean", "test"]
         elif Path("build.gradle").exists() or Path("build.gradle.kts").exists():
             print("Detected Gradle project")
-            energy_command = ["java", "-jar", str(joularjx_path), "gradle", "clean", "test"]
+            # Set GRADLE_OPTS to attach the joularjx agent
+            os.environ["GRADLE_OPTS"] = f"-javaagent:{str(joularjx_path)}"
+            energy_command = ["gradle", "clean", "test"]
         else:
             print(f"No recognized build file found for {project}")
             os.chdir(project_dir.parents[1])
