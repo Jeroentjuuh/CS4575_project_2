@@ -51,7 +51,7 @@ if __name__ == "__main__":
             energy_command = ["java", "-jar", str(joularjx_path), "mvn", "clean", "test"]
         elif Path("build.gradle").exists() or Path("build.gradle.kts").exists():
             print("Detected Gradle project")
-            energy_command = [str(joularjx_path), "gradle", "clean", "test"]
+            energy_command = ["java", "-jar", str(joularjx_path), "gradle", "clean", "test"]
         else:
             print(f"No recognized build file found for {project}")
             os.chdir(project_dir.parents[1])
