@@ -2,14 +2,35 @@ from subprocess import Popen, run
 from pathlib import Path
 import os
 import xml.etree.ElementTree as ET
+import shutil
+import configparser
 
 repos = [
 	# "https://github.com/allure-framework/allure-java.git"
 	# "https://github.com/apache/cassandra.git",
 	# "https://github.com/apache/camel.git",
 	# "https://github.com/apache/accumulo.git",
-	"https://github.com/1c-syntax/bsl-language-server.git",
-	"https://github.com/hub4j/github-api.git"
+	# "https://github.com/1c-syntax/bsl-language-server.git",
+	"https://github.com/hub4j/github-api.git",
+	# "https://github.com/zendesk/maxwell.git",
+	"https://github.com/zebrunner/carina.git",
+	"https://github.com/yegor256/cactoos.git",
+	# "https://github.com/xnio/xnio.git",
+	"https://github.com/wmixvideo/nfe.git",
+	# "https://github.com/twilio/twilio-java.git",
+	"https://github.com/ta4j/ta4j.git",
+	# "https://github.com/sqlancer/sqlancer.git",
+	# "https://github.com/soot-oss/soot.git" # this does some sort of concurrency, is it a good one?
+	"https://github.com/junit-team/junit4.git", # This one is private?
+	"https://github.com/okta/okta-spring-boot.git",
+	"https://github.com/julianhyde/sqlline.git",
+	"https://github.com/togglz/togglz.git",
+	"https://github.com/eclipse-ee4j/jaxrs-api.git",
+	"https://github.com/damianszczepanik/cucumber-reporting.git",
+	"https://github.com/decorators-squad/eo-yaml.git",
+	"https://github.com/dlsc-software-consulting-gmbh/preferencesfx.git",
+	"https://github.com/forcedotcom/dataloader.git",
+	"https://github.com/forge/roaster.git"
 ]
 
 if __name__ == "__main__":
@@ -39,6 +60,10 @@ if __name__ == "__main__":
 		
 		os.chdir(project_dir)
 
+		shutil.rmtree(f"{project_dir}/joularjx-result", ignore_errors=True)
+		shutil.copy('../../config.properties', f"{project_dir}/config.properties")
+		# config = configparser.ConfigParser()
+		# config.read(f"{project_dir}/config.properties")
 		log_path = Path("../../logs", project + "_build.log")
 		succeeded = False
 
@@ -51,6 +76,9 @@ if __name__ == "__main__":
 			prefix = tree.getroot().tag.replace("project", "")
 			ET.register_namespace("", prefix[1:-1])
 			tree = ET.parse(Path(project_dir, "pom.xml"))
+			groupId = tree.find(f"{prefix}groupId").text
+
+			# config.set("filter-method-names", "filter-method-names", groupId)
 			for plugin in tree.iter(f"{prefix}plugin"):
 				artifactId = plugin.find(f"{prefix}artifactId").text
 				if "maven-surefire-plugin" in artifactId:
