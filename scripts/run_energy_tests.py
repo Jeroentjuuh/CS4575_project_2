@@ -3,6 +3,9 @@ from pathlib import Path
 import os
 import xml.etree.ElementTree as ET
 import shutil
+import csv
+import sys
+import matplotlib.pyplot as plt
 
 repos = [
 	# "https://github.com/allure-framework/allure-java.git"
@@ -42,13 +45,16 @@ if __name__ == "__main__":
 
 	# Build joularjx
 	joularjx_dir = Path(os.getcwd(), "joularjx")
-	run(["git", "clone", "https://github.com/joular/joularjx.git", joularjx_dir])
-	shutil.copy(Path("config.properties"), Path(joularjx_dir, "config.properties"))
-	os.chdir(joularjx_dir)
-	r = run("mvn clean install -DskipTests", shell=True)
+	if "--skip-joularjx-build" in sys.argv:
+		print("Skipping JoularJX build")
+	else:
+		run(["git", "clone", "https://github.com/joular/joularjx.git", joularjx_dir])
+		shutil.copy(Path("config.properties"), Path(joularjx_dir, "config.properties"))
+		os.chdir(joularjx_dir)
+		r = run("mvn clean install -DskipTests", shell=True)
+		os.chdir(joularjx_dir.parents[0])
 	joularjx_path = Path(joularjx_dir, "target", list(filter(lambda x: x.endswith(".jar") and "joularjx" in x, os.listdir(Path(joularjx_dir, "target"))))[0])
 	print(f"JoularJX path: {joularjx_path}")
-	os.chdir(joularjx_dir.parents[0])
 
 	# Clone repos and run tests
 	for repo in repos:
@@ -127,13 +133,12 @@ if __name__ == "__main__":
 			
 
 			# Run tests with joularjx
-			with open(log_path, "w") as outfile:
-				r = run("mvn clean test", shell=True, stdout=outfile, stderr=outfile)
+			# with open(log_path, "w") as outfile:
+			# 	r = run("mvn clean test", shell=True, stdout=outfile, stderr=outfile)
 
 			# Move joularjx files to results folder
 			for csv_file in Path(project_dir).rglob("*.csv"):
 				if "joularJX" in csv_file.name:
-					print(csv_file.name)
 					csv_name = f"{project}-" + "-".join(csv_file.name.split("-")[2:])
 					shutil.move(csv_file.resolve(), Path("../", "../", "results", csv_name))
 			
@@ -147,5 +152,30 @@ if __name__ == "__main__":
 			
 		os.chdir(project_dir.parents[1])
 
-	print("done")
+	# Generate plots
+	Path("./plots").mkdir(exist_ok=True)
+	for csv_file in Path("./results").glob("*.csv"):
+		if "filtered-methods-energy" in csv_file.name:
+			project_name = csv_file.stem.split("-")[0]
+			print(f"Generating plot for {project_name}")
+			tests_energy_consumption = {}
+			with open(csv_file, "r") as file:
+				csv_data = csv.reader(file)
+				for line in csv_data:
+					test_name = line[0].split(".")[-2].split("$")[0]
+					energy_consumption = float(line[1])
+					if "test" not in test_name.lower():
+						continue
+					if test_name not in tests_energy_consumption:
+						tests_energy_consumption[test_name] = 0.
+					tests_energy_consumption[test_name] += energy_consumption
+			plt.bar(tests_energy_consumption.keys(), tests_energy_consumption.values())
+			plt.title(f"Test energy consumption of {project_name}")
+			plt.xlabel("Test name")
+			plt.ylabel("Energy consumption (J)")
+			plt.xticks(rotation=90)
+			plt.tight_layout()
+			plt.savefig(Path("./plots", f"{project_name}.png"), dpi=300)
+			plt.close()
 
+	print("done")

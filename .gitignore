@@ -13,6 +13,7 @@
 # So it doesnt get tracked by version control
 external_projects/
 results
+plots
 
 # Package Files #
 *.jar
