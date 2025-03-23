@@ -3,7 +3,6 @@ from pathlib import Path
 import os
 import xml.etree.ElementTree as ET
 import shutil
-import configparser
 
 repos = [
 	# "https://github.com/allure-framework/allure-java.git"
@@ -32,7 +31,6 @@ repos = [
 	"https://github.com/forcedotcom/dataloader.git",
 	"https://github.com/forge/roaster.git"
 ]
-# repos = repos[:2]
 
 if __name__ == "__main__":
 	# Create directories if they don't exist
@@ -47,7 +45,7 @@ if __name__ == "__main__":
 	run(["git", "clone", "https://github.com/joular/joularjx.git", joularjx_dir])
 	shutil.copy(Path("config.properties"), Path(joularjx_dir, "config.properties"))
 	os.chdir(joularjx_dir)
-	# r = run("mvn clean install -DskipTests", shell=True)
+	r = run("mvn clean install -DskipTests", shell=True)
 	joularjx_path = Path(joularjx_dir, "target", list(filter(lambda x: x.endswith(".jar") and "joularjx" in x, os.listdir(Path(joularjx_dir, "target"))))[0])
 	print(f"JoularJX path: {joularjx_path}")
 	os.chdir(joularjx_dir.parents[0])
