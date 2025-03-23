@@ -12,7 +12,7 @@
 
 # So it doesnt get tracked by version control
 external_projects/
-
+results
 
 # Package Files #
 *.jar
