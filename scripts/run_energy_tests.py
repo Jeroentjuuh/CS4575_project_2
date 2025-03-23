@@ -76,8 +76,8 @@ if __name__ == "__main__":
 			prefix = tree.getroot().tag.replace("project", "")
 			ET.register_namespace("", prefix[1:-1])
 			tree = ET.parse(Path(project_dir, "pom.xml"))
-			groupId = tree.find(f"{prefix}groupId").text
 
+			# Add joularjx to existing surefire config in pom.xml
 			found_surefire = 0
 			for plugin in tree.iter(f"{prefix}plugin"):
 				artifactId = plugin.find(f"{prefix}artifactId").text
@@ -93,6 +93,8 @@ if __name__ == "__main__":
 						argLine.text = f"-javaagent:\"{joularjx_path}\""
 					elif "joularjx" not in argLine.text.lower():
 						argLine.text = f"-javaagent:\"{joularjx_path}\" {argLine.text}"
+			
+			# If no surefire config was found, insert one into pom.xml
 			if found_surefire > 0:
 				print(f"Found surefire plugin in {project}")
 			else:
@@ -110,12 +112,33 @@ if __name__ == "__main__":
 					plugins_list.append(surefire_element)
 			tree.write("pom.xml")
 
+			# Find packages containing tests in external project
+			test_packages = set()
+			for java_tests in Path(project_dir).rglob("*.java"):
+				if "test" in java_tests.name.lower():
+					with open(java_tests, "r") as tests_file:
+						for line in tests_file.readlines():
+							if line.startswith("package"):
+								package_name = line.split(" ")[1][:-2]
+								test_packages.add(package_name)
+			with open(Path("config.properties"), "r") as joular_config:
+				data = joular_config.read()
+			data = data.replace("REPLACE-WITH-JOULAR-TEST-PACKAGES", ",".join(test_packages))
+			with open(Path("config.properties"), "w") as joular_config:
+				joular_config.write(data)
+			
+
+			# Run tests with joularjx
 			with open(log_path, "w") as outfile:
 				r = run("mvn clean test", shell=True, stdout=outfile, stderr=outfile)
-			for csv_file in Path(project_dir, "joularjx-result").rglob("*.csv"):
-				print(csv_file.name)
-				csv_name = f"{project}-" + "-".join(csv_file.name.split("-")[2:])
-				shutil.move(csv_file.resolve(), Path("../", "../", "results", csv_name))
+
+			# Move joularjx files to results folder
+			for csv_file in Path(project_dir).rglob("*.csv"):
+				if "joularJX" in csv_file.name:
+					print(csv_file.name)
+					csv_name = f"{project}-" + "-".join(csv_file.name.split("-")[2:])
+					shutil.move(csv_file.resolve(), Path("../", "../", "results", csv_name))
+			
 		elif Path("build.gradle").exists() or Path("build.gradle.kts").exists():
 			print("Gradle project, skipping...")
 			continue
