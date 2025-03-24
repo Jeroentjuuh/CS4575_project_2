@@ -193,7 +193,6 @@ if __name__ == "__main__":
 			run_command_in_external_project("mvn test", project_dir, log_path)
 			extract_joularjx_csv_files(project_dir, i)
 
-
 	# Generate plots
 	print("Generating plots")
 	projects = {}
@@ -226,6 +225,7 @@ if __name__ == "__main__":
 		if len(tests_energy_consumption.keys()) == 0:
 			print(f"No tests found for {project}, skipping...")
 			continue
+		
 		means = []
 		for test, energy_consumptions in tests_energy_consumption.items():
 			means.append((test, np.mean(energy_consumptions)))
@@ -240,29 +240,5 @@ if __name__ == "__main__":
 		plt.tight_layout()
 		plt.savefig(Path("./plots", f"{project}.png"), dpi=300)
 		plt.close()
-
-	# for csv_file in Path("./results").glob("*.csv"):
-	# 	if "filtered-methods-energy" in csv_file.name:
-	# 		project_name = csv_file.stem.split("-")[1]
-	# 		print(f"Generating plot for {project_name}")
-	# 		tests_energy_consumption = {}
-	# 		with open(csv_file, "r") as file:
-	# 			csv_data = csv.reader(file)
-	# 			for line in csv_data:
-	# 				test_name = line[0].split(".")[-2].split("$")[0]
-	# 				energy_consumption = float(line[1])
-	# 				if "test" not in test_name.lower():
-	# 					continue
-	# 				if test_name not in tests_energy_consumption:
-	# 					tests_energy_consumption[test_name] = 0.
-	# 				tests_energy_consumption[test_name] += energy_consumption
-	# 		plt.bar(tests_energy_consumption.keys(), tests_energy_consumption.values())
-	# 		plt.title(f"Test energy consumption of {project_name}")
-	# 		plt.xlabel("Test name")
-	# 		plt.ylabel("Energy consumption (J)")
-	# 		plt.xticks(rotation=90)
-	# 		plt.tight_layout()
-	# 		plt.savefig(Path("./plots", f"{project_name}.png"), dpi=300)
-	# 		plt.close()
 
 	print("done")
