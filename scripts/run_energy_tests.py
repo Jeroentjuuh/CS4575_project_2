@@ -69,8 +69,10 @@ def add_test_packages_to_joularjx(project_dir=None):
 def mvn_add_joularjx(project_dir, joularjx_path):
 	# Add JoularJX config file to project
 	shutil.copy(Path("config.properties"), Path(project_dir, "config.properties"))
+
 	old_path = os.getcwd()
 	os.chdir(project_dir)
+
 	tree = ET.parse(Path(project_dir, "pom.xml"))
 	prefix = tree.getroot().tag.replace("project", "")
 	ET.register_namespace("", prefix[1:-1])
@@ -166,7 +168,7 @@ if __name__ == "__main__":
 			# Run tests with joularjx
 			run_command_in_external_project("mvn clean test", project_dir, log_path)
 			
-			extract_joularjx_csv_files(project_dir)
+			extract_joularjx_csv_files(project_dir, "build")
 			
 		elif Path("build.gradle").exists() or Path("build.gradle.kts").exists():
 			print("Gradle project, skipping...")
@@ -177,6 +179,19 @@ if __name__ == "__main__":
 			print(f"No recognized build file found for {project}")
 			
 		os.chdir(project_dir.parents[1])
+	
+	# Run tests multiple times (experiment phase)
+	total_runs = 5
+	for i in range(total_runs):
+		print(f"Performing experiment run {i+1} of {total_runs}")
+		for repo in repos:
+			project = Path(repo).stem
+			project_dir = Path(os.getcwd(), "external_projects", project)
+			log_path = Path(os.getcwd(), "logs", f"{i}_{project}_run.log")
+			print(f"Running {project} ({i+1}/{total_runs})")
+			run_command_in_external_project("mvn test", project_dir, log_path)
+			extract_joularjx_csv_files(project_dir, i)
+
 
 	# Generate plots
 	for csv_file in Path("./results").glob("*.csv"):
