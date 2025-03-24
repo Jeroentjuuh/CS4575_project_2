@@ -15,7 +15,7 @@ repos = [
 	# "https://github.com/1c-syntax/bsl-language-server.git",
 	"https://github.com/hub4j/github-api.git",
 	# "https://github.com/zendesk/maxwell.git",
-	"https://github.com/zebrunner/carina.git",
+	"https://github.com/zebrunner/carina.git", # No tests
 	"https://github.com/yegor256/cactoos.git",
 	# "https://github.com/xnio/xnio.git",
 	"https://github.com/wmixvideo/nfe.git",
@@ -24,15 +24,15 @@ repos = [
 	# "https://github.com/sqlancer/sqlancer.git",
 	# "https://github.com/soot-oss/soot.git" # this does some sort of concurrency, is it a good one?
 	"https://github.com/junit-team/junit4.git", # This one is private?
-	"https://github.com/okta/okta-spring-boot.git",
+	# "https://github.com/okta/okta-spring-boot.git", # No tests
 	"https://github.com/julianhyde/sqlline.git",
-	"https://github.com/togglz/togglz.git",
-	"https://github.com/eclipse-ee4j/jaxrs-api.git",
+	# "https://github.com/togglz/togglz.git", # No tests
+	# "https://github.com/eclipse-ee4j/jaxrs-api.git", # No tests
 	"https://github.com/damianszczepanik/cucumber-reporting.git",
 	"https://github.com/decorators-squad/eo-yaml.git",
 	"https://github.com/dlsc-software-consulting-gmbh/preferencesfx.git",
 	"https://github.com/forcedotcom/dataloader.git",
-	"https://github.com/forge/roaster.git"
+	# "https://github.com/forge/roaster.git" # No tests
 ]
 
 def build_joularjx(joularjx_dir):
