@@ -133,8 +133,8 @@ if __name__ == "__main__":
 			
 
 			# Run tests with joularjx
-			# with open(log_path, "w") as outfile:
-			# 	r = run("mvn clean test", shell=True, stdout=outfile, stderr=outfile)
+			with open(log_path, "w") as outfile:
+				r = run("mvn clean test", shell=True, stdout=outfile, stderr=outfile)
 
 			# Move joularjx files to results folder
 			for csv_file in Path(project_dir).rglob("*.csv"):
