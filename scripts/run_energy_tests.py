@@ -6,6 +6,7 @@ import shutil
 import csv
 import sys
 import matplotlib.pyplot as plt
+import numpy as np
 
 repos = [
 	# "https://github.com/allure-framework/allure-java.git"
@@ -166,7 +167,7 @@ if __name__ == "__main__":
 			mvn_add_joularjx(project_dir, joularjx_path)
 
 			# Run tests with joularjx
-			run_command_in_external_project("mvn clean test", project_dir, log_path)
+			# run_command_in_external_project("mvn clean test", project_dir, log_path)
 			
 			extract_joularjx_csv_files(project_dir, "build")
 			
@@ -189,33 +190,79 @@ if __name__ == "__main__":
 			project_dir = Path(os.getcwd(), "external_projects", project)
 			log_path = Path(os.getcwd(), "logs", f"{i}_{project}_run.log")
 			print(f"Running {project} ({i+1}/{total_runs})")
-			run_command_in_external_project("mvn test", project_dir, log_path)
-			extract_joularjx_csv_files(project_dir, i)
+			# run_command_in_external_project("mvn test", project_dir, log_path)
+			# extract_joularjx_csv_files(project_dir, i)
 
 
 	# Generate plots
+	print("Generating plots")
+	projects = {}
+	for repo in repos:
+		projects[Path(repo).stem] = []
 	for csv_file in Path("./results").glob("*.csv"):
-		if "filtered-methods-energy" in csv_file.name:
-			project_name = csv_file.stem.split("-")[1]
-			print(f"Generating plot for {project_name}")
-			tests_energy_consumption = {}
+		# print(csv_file.name)
+		for project in projects.keys():
+			if project in csv_file.name and "filtered-methods-energy" in csv_file.name and not csv_file.name.startswith("build"):
+				projects[project].append(csv_file)
+
+	for project, csv_files in projects.items():
+		if len(csv_files) > 0:
+			print(f"Generating plot for {project}")
+		else:
+			print(f"No CSV files found for {project}, skipping...")
+			continue
+		tests_energy_consumption = {}
+		for csv_file in csv_files:
 			with open(csv_file, "r") as file:
 				csv_data = csv.reader(file)
 				for line in csv_data:
-					test_name = line[0].split(".")[-2].split("$")[0]
+					test_name = line[0].split(".")[-1].split("$")[0]
 					energy_consumption = float(line[1])
-					if "test" not in test_name.lower():
+					if "test" not in line[0].lower():
 						continue
 					if test_name not in tests_energy_consumption:
-						tests_energy_consumption[test_name] = 0.
-					tests_energy_consumption[test_name] += energy_consumption
-			plt.bar(tests_energy_consumption.keys(), tests_energy_consumption.values())
-			plt.title(f"Test energy consumption of {project_name}")
-			plt.xlabel("Test name")
-			plt.ylabel("Energy consumption (J)")
-			plt.xticks(rotation=90)
-			plt.tight_layout()
-			plt.savefig(Path("./plots", f"{project_name}.png"), dpi=300)
-			plt.close()
+						tests_energy_consumption[test_name] = []
+					tests_energy_consumption[test_name].append(energy_consumption)
+		if len(tests_energy_consumption.keys()) == 0:
+			print(f"No tests found for {project}, skipping...")
+			continue
+		means = []
+		for test, energy_consumptions in tests_energy_consumption.items():
+			means.append((test, np.mean(energy_consumptions)))
+		means = sorted(means, key=lambda x: x[1], reverse=True)
+		boxes = [tests_energy_consumption[tup[0]] for tup in means[:10]]
+		labels = [tup[0] for tup in means[:10]]
+		bplot = plt.boxplot(boxes, labels=labels)
+		plt.title(f"Test energy consumption of {project}")
+		plt.xlabel("Test name")
+		plt.ylabel("Energy consumption (J)")
+		plt.xticks(rotation=90)
+		plt.tight_layout()
+		plt.savefig(Path("./plots", f"{project}.png"), dpi=300)
+		plt.close()
+
+	# for csv_file in Path("./results").glob("*.csv"):
+	# 	if "filtered-methods-energy" in csv_file.name:
+	# 		project_name = csv_file.stem.split("-")[1]
+	# 		print(f"Generating plot for {project_name}")
+	# 		tests_energy_consumption = {}
+	# 		with open(csv_file, "r") as file:
+	# 			csv_data = csv.reader(file)
+	# 			for line in csv_data:
+	# 				test_name = line[0].split(".")[-2].split("$")[0]
+	# 				energy_consumption = float(line[1])
+	# 				if "test" not in test_name.lower():
+	# 					continue
+	# 				if test_name not in tests_energy_consumption:
+	# 					tests_energy_consumption[test_name] = 0.
+	# 				tests_energy_consumption[test_name] += energy_consumption
+	# 		plt.bar(tests_energy_consumption.keys(), tests_energy_consumption.values())
+	# 		plt.title(f"Test energy consumption of {project_name}")
+	# 		plt.xlabel("Test name")
+	# 		plt.ylabel("Energy consumption (J)")
+	# 		plt.xticks(rotation=90)
+	# 		plt.tight_layout()
+	# 		plt.savefig(Path("./plots", f"{project_name}.png"), dpi=300)
+	# 		plt.close()
 
 	print("done")
