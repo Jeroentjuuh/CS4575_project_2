@@ -167,7 +167,7 @@ if __name__ == "__main__":
 			mvn_add_joularjx(project_dir, joularjx_path)
 
 			# Run tests with joularjx
-			# run_command_in_external_project("mvn clean test", project_dir, log_path)
+			run_command_in_external_project("mvn clean test", project_dir, log_path)
 			
 			extract_joularjx_csv_files(project_dir, "build")
 			
@@ -190,8 +190,8 @@ if __name__ == "__main__":
 			project_dir = Path(os.getcwd(), "external_projects", project)
 			log_path = Path(os.getcwd(), "logs", f"{i}_{project}_run.log")
 			print(f"Running {project} ({i+1}/{total_runs})")
-			# run_command_in_external_project("mvn test", project_dir, log_path)
-			# extract_joularjx_csv_files(project_dir, i)
+			run_command_in_external_project("mvn test", project_dir, log_path)
+			extract_joularjx_csv_files(project_dir, i)
 
 
 	# Generate plots
