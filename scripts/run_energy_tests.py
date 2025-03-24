@@ -103,13 +103,13 @@ if __name__ == "__main__":
 				print(f"Found surefire plugin in {project}")
 			else:
 				print(f"No surefire in {project}")
-				surefire_element = ET.fromstring("""<plugin>
+				surefire_element = ET.fromstring(f"""<plugin>
           <artifactId>maven-surefire-plugin</artifactId>
           <version>3.5.2</version>
           <configuration>
 
             <trimStackTrace>false</trimStackTrace>
-            <argLine>-javaagent:"/home/roelof/Repositories/CS4575_project_2/joularjx/target/joularjx-3.0.1.jar"</argLine>
+            <argLine>-javaagent:"{joularjx_path}"</argLine>
           </configuration>
         </plugin>""")
 				for plugins_list in tree.iter(f"{prefix}plugins"):
