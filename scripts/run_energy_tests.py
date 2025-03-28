@@ -180,7 +180,7 @@ def generate_plots():
 			with open(csv_file, "r") as file:
 				csv_data = csv.reader(file)
 				for line in csv_data:
-					test_name = ".".join(line[0].split(".")[-2:-1]).split("$")[0]
+					test_name = ".".join(line[0].split(".")[-2:]).split("$")[0]
 					energy_consumption = float(line[1])
 					if "test" not in line[0].lower():
 						continue
@@ -196,7 +196,7 @@ def generate_plots():
 			means.append((test, np.mean(energy_consumptions)))
 		means = sorted(means, key=lambda x: x[1], reverse=True)
 		boxes = [tests_energy_consumption[tup[0]] for tup in means[:10]]
-		labels = [tup[0] for tup in means[:10]]
+		labels = [tup[0].split(".")[-1] for tup in means[:10]]
 		bplot = plt.boxplot(boxes, labels=labels)
 		plt.title(f"Test energy consumption of {project}")
 		plt.xlabel("Test name")
