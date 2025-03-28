@@ -157,6 +157,55 @@ def run_experiment(total_runs = 5):
 			run_command_in_external_project("mvn test", project_dir, log_path)
 			extract_joularjx_csv_files(project_dir, i)
 
+# Generate plots from csv files
+def generate_plots():
+	print("Generating plots")
+	projects = {}
+	for repo in repos:
+		projects[Path(repo).stem] = []
+	for csv_file in Path("./results").glob("*.csv"):
+		# print(csv_file.name)
+		for project in projects.keys():
+			if project in csv_file.name and "filtered-methods-energy" in csv_file.name and not csv_file.name.startswith("build"):
+				projects[project].append(csv_file)
+
+	for project, csv_files in projects.items():
+		if len(csv_files) > 0:
+			print(f"Generating plot for {project}")
+		else:
+			print(f"No CSV files found for {project}, skipping...")
+			continue
+		tests_energy_consumption = {}
+		for csv_file in csv_files:
+			with open(csv_file, "r") as file:
+				csv_data = csv.reader(file)
+				for line in csv_data:
+					test_name = ".".join(line[0].split(".")[-2:-1]).split("$")[0]
+					energy_consumption = float(line[1])
+					if "test" not in line[0].lower():
+						continue
+					if test_name not in tests_energy_consumption:
+						tests_energy_consumption[test_name] = []
+					tests_energy_consumption[test_name].append(energy_consumption)
+		if len(tests_energy_consumption.keys()) == 0:
+			print(f"No tests found for {project}, skipping...")
+			continue
+		
+		means = []
+		for test, energy_consumptions in tests_energy_consumption.items():
+			means.append((test, np.mean(energy_consumptions)))
+		means = sorted(means, key=lambda x: x[1], reverse=True)
+		boxes = [tests_energy_consumption[tup[0]] for tup in means[:10]]
+		labels = [tup[0] for tup in means[:10]]
+		bplot = plt.boxplot(boxes, labels=labels)
+		plt.title(f"Test energy consumption of {project}")
+		plt.xlabel("Test name")
+		plt.ylabel("Energy consumption (J)")
+		plt.xticks(rotation=90)
+		plt.tight_layout()
+		plt.savefig(Path("./plots", f"{project}.png"), dpi=300)
+		plt.close()
+
 if __name__ == "__main__":
 	# Create directories if they don't exist
 	os.chdir(Path(__file__).parents[1].resolve())
@@ -214,51 +263,7 @@ if __name__ == "__main__":
 		run_experiment()
 
 	# Generate plots
-	print("Generating plots")
-	projects = {}
-	for repo in repos:
-		projects[Path(repo).stem] = []
-	for csv_file in Path("./results").glob("*.csv"):
-		# print(csv_file.name)
-		for project in projects.keys():
-			if project in csv_file.name and "filtered-methods-energy" in csv_file.name and not csv_file.name.startswith("build"):
-				projects[project].append(csv_file)
-
-	for project, csv_files in projects.items():
-		if len(csv_files) > 0:
-			print(f"Generating plot for {project}")
-		else:
-			print(f"No CSV files found for {project}, skipping...")
-			continue
-		tests_energy_consumption = {}
-		for csv_file in csv_files:
-			with open(csv_file, "r") as file:
-				csv_data = csv.reader(file)
-				for line in csv_data:
-					test_name = ".".join(line[0].split(".")[-2:-1]).split("$")[0]
-					energy_consumption = float(line[1])
-					if "test" not in line[0].lower():
-						continue
-					if test_name not in tests_energy_consumption:
-						tests_energy_consumption[test_name] = []
-					tests_energy_consumption[test_name].append(energy_consumption)
-		if len(tests_energy_consumption.keys()) == 0:
-			print(f"No tests found for {project}, skipping...")
-			continue
-		
-		means = []
-		for test, energy_consumptions in tests_energy_consumption.items():
-			means.append((test, np.mean(energy_consumptions)))
-		means = sorted(means, key=lambda x: x[1], reverse=True)
-		boxes = [tests_energy_consumption[tup[0]] for tup in means[:10]]
-		labels = [tup[0] for tup in means[:10]]
-		bplot = plt.boxplot(boxes, labels=labels)
-		plt.title(f"Test energy consumption of {project}")
-		plt.xlabel("Test name")
-		plt.ylabel("Energy consumption (J)")
-		plt.xticks(rotation=90)
-		plt.tight_layout()
-		plt.savefig(Path("./plots", f"{project}.png"), dpi=300)
-		plt.close()
+	if "--skip-plots" not in sys.argv:
+		generate_plots()
 
 	print("done")
