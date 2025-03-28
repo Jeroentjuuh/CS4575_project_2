@@ -55,17 +55,24 @@ def add_test_packages_to_joularjx(project_dir=None):
 	# Find packages containing tests in external project
 	test_packages = set()
 	for java_tests in Path(project_dir).rglob("*.java"):
-		if "test" in java_tests.name.lower():
+		if "test" in java_tests.parent.name.lower():
 			with open(java_tests, "r") as tests_file:
 				for line in tests_file.readlines():
 					if line.startswith("package"):
 						package_name = line.split(" ")[1][:-2]
-						test_packages.add(package_name)
+						test_packages.add(f"{package_name}.{Path(java_tests).stem}")
 	with open(Path("config.properties"), "r") as joular_config:
 		data = joular_config.read()
 	data = data.replace("REPLACE-WITH-JOULAR-TEST-PACKAGES", ",".join(test_packages))
 	with open(Path("config.properties"), "w") as joular_config:
 		joular_config.write(data)
+	
+	# Copy this config file to any place where there is a pom.xml file
+	config_path = Path("config.properties")
+	for pom_xml in Path().rglob("pom.xml"):
+		new_path = Path(pom_xml.parent, "config.properties")
+		if not new_path.exists():
+			shutil.copy(config_path, new_path)
 
 def mvn_add_joularjx(project_dir, joularjx_path):
 	# Add JoularJX config file to project
@@ -74,45 +81,46 @@ def mvn_add_joularjx(project_dir, joularjx_path):
 	old_path = os.getcwd()
 	os.chdir(project_dir)
 
-	tree = ET.parse(Path(project_dir, "pom.xml"))
-	prefix = tree.getroot().tag.replace("project", "")
-	ET.register_namespace("", prefix[1:-1])
-	tree = ET.parse(Path(project_dir, "pom.xml"))
+	for xml_file in Path(project_dir).rglob("pom.xml"):
+		tree = ET.parse(xml_file)
+		prefix = tree.getroot().tag.replace("project", "")
+		ET.register_namespace("", prefix[1:-1])
+		tree = ET.parse(xml_file)
 
-	# Add joularjx to existing surefire config in pom.xml
-	found_surefire = 0
-	for plugin in tree.iter(f"{prefix}plugin"):
-		artifactId = plugin.find(f"{prefix}artifactId").text
-		if "maven-surefire-plugin" in artifactId:
-			found_surefire += 1
-			if plugin.find(f"{prefix}configuration") is None:
-				plugin.append(ET.Element(f"{prefix}configuration"))
-			configuration = plugin.find(f"{prefix}configuration")
-			if configuration.find(f"{prefix}argLine") is None:
-				configuration.append(ET.Element(f"{prefix}argLine"))
-			argLine = plugin.find(f"{prefix}configuration/{prefix}argLine")
-			if argLine.text is None:
-				argLine.text = f"-javaagent:\"{joularjx_path}\""
-			elif "joularjx" not in argLine.text.lower():
-				argLine.text = f"-javaagent:\"{joularjx_path}\" {argLine.text}"
-	
-	# If no surefire config was found, insert one into pom.xml
-	if found_surefire > 0:
-		print(f"Found surefire plugin in {project_dir.stem}")
-	else:
-		print(f"No surefire in {project_dir.stem}")
-		surefire_element = ET.fromstring(f"""<plugin>
-	<artifactId>maven-surefire-plugin</artifactId>
-	<version>3.5.2</version>
-	<configuration>
+		# Add joularjx to existing surefire config in pom.xml
+		found_surefire = 0
+		for plugin in tree.iter(f"{prefix}plugin"):
+			artifactId = plugin.find(f"{prefix}artifactId").text
+			if "maven-surefire-plugin" in artifactId:
+				found_surefire += 1
+				if plugin.find(f"{prefix}configuration") is None:
+					plugin.append(ET.Element(f"{prefix}configuration"))
+				configuration = plugin.find(f"{prefix}configuration")
+				if configuration.find(f"{prefix}argLine") is None:
+					configuration.append(ET.Element(f"{prefix}argLine"))
+				argLine = plugin.find(f"{prefix}configuration/{prefix}argLine")
+				if argLine.text is None:
+					argLine.text = f"-javaagent:\"{joularjx_path}\""
+				elif "joularjx" not in argLine.text.lower():
+					argLine.text = f"-javaagent:\"{joularjx_path}\" {argLine.text}"
+		
+		# If no surefire config was found, insert one into pom.xml
+		if found_surefire > 0:
+			print(f"Found surefire plugin in {project_dir.stem}")
+		else:
+			print(f"No surefire in {project_dir.stem}")
+			surefire_element = ET.fromstring(f"""<plugin>
+		<artifactId>maven-surefire-plugin</artifactId>
+		<version>3.5.2</version>
+		<configuration>
 
-	<trimStackTrace>false</trimStackTrace>
-	<argLine>-javaagent:"{joularjx_path}"</argLine>
-	</configuration>
-</plugin>""")
-		for plugins_list in tree.iter(f"{prefix}plugins"):
-			plugins_list.append(surefire_element)
-	tree.write("pom.xml")
+		<trimStackTrace>false</trimStackTrace>
+		<argLine>-javaagent:"{joularjx_path}"</argLine>
+		</configuration>
+	</plugin>""")
+			for plugins_list in tree.iter(f"{prefix}plugins"):
+				plugins_list.append(surefire_element)
+		tree.write(xml_file)
 
 	add_test_packages_to_joularjx(project_dir)
 	os.chdir(old_path)
@@ -135,8 +143,23 @@ def run_command_in_external_project(command, project_dir, log_path=None):
 			r = run(command, shell=True, stdout=outfile, stderr=outfile)
 	os.chdir(old_dir)
 
+# Run tests multiple times (experiment phase)
+def run_experiment(total_runs = 5):
+	total_runs = 5
+	total_repos = len(repos)
+	for i in range(total_runs):
+		print(f"Performing experiment run {i+1} of {total_runs}")
+		for j, repo in enumerate(repos):
+			project = Path(repo).stem
+			project_dir = Path(os.getcwd(), "external_projects", project)
+			log_path = Path(os.getcwd(), "logs", f"{i}_{project}_run.log")
+			print(f"Running {project} ({j+1}/{total_repos})")
+			run_command_in_external_project("mvn test", project_dir, log_path)
+			extract_joularjx_csv_files(project_dir, i)
+
 if __name__ == "__main__":
 	# Create directories if they don't exist
+	os.chdir(Path(__file__).parents[1].resolve())
 	Path("./external_projects").mkdir(exist_ok=True)
 	Path("./logs").mkdir(exist_ok=True)
 	Path("./logs").mkdir(exist_ok=True)
@@ -166,10 +189,13 @@ if __name__ == "__main__":
 			# Add JoularJX to project
 			mvn_add_joularjx(project_dir, joularjx_path)
 
-			# Run tests with joularjx
-			run_command_in_external_project("mvn clean test", project_dir, log_path)
-			
-			extract_joularjx_csv_files(project_dir, "build")
+			if "--skip-tests" in sys.argv or "--skip-build" in sys.argv:
+				print(f"Skipping build for {project}...")
+			else:
+				# Run tests with joularjx
+				run_command_in_external_project("mvn clean test", project_dir, log_path)
+				
+				extract_joularjx_csv_files(project_dir, "build")
 			
 		elif Path("build.gradle").exists() or Path("build.gradle.kts").exists():
 			print("Gradle project, skipping...")
@@ -181,17 +207,11 @@ if __name__ == "__main__":
 			
 		os.chdir(project_dir.parents[1])
 	
-	# Run tests multiple times (experiment phase)
-	total_runs = 5
-	for i in range(total_runs):
-		print(f"Performing experiment run {i+1} of {total_runs}")
-		for repo in repos:
-			project = Path(repo).stem
-			project_dir = Path(os.getcwd(), "external_projects", project)
-			log_path = Path(os.getcwd(), "logs", f"{i}_{project}_run.log")
-			print(f"Running {project} ({i+1}/{total_runs})")
-			run_command_in_external_project("mvn test", project_dir, log_path)
-			extract_joularjx_csv_files(project_dir, i)
+	if "--skip-tests" in sys.argv or "--skip-experiment" in sys.argv:
+		print("Skipping experiment...")
+	else:
+		# Defaults to 5 runs
+		run_experiment()
 
 	# Generate plots
 	print("Generating plots")
@@ -215,7 +235,7 @@ if __name__ == "__main__":
 			with open(csv_file, "r") as file:
 				csv_data = csv.reader(file)
 				for line in csv_data:
-					test_name = line[0].split(".")[-1].split("$")[0]
+					test_name = ".".join(line[0].split(".")[-2:-1]).split("$")[0]
 					energy_consumption = float(line[1])
 					if "test" not in line[0].lower():
 						continue
