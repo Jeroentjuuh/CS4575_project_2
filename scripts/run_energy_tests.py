@@ -131,7 +131,7 @@ def extract_joularjx_csv_files(project_dir, prefix=0):
 	# Move joularjx files to results folder
 	for csv_file in Path(project_dir).rglob("*.csv"):
 		if "joularJX" in csv_file.name:
-			csv_name = "-".join([prefix, project] + csv_file.name.split("-")[2:])
+			csv_name = "-".join([prefix, project_dir.stem] + csv_file.name.split("-")[2:])
 			shutil.move(csv_file.resolve(), Path("results", csv_name))
 
 def run_command_in_external_project(command, project_dir, log_path=None):
@@ -155,7 +155,7 @@ def run_experiment(total_runs = 5):
 			project_dir = Path(os.getcwd(), "external_projects", project)
 			log_path = Path(os.getcwd(), "logs", f"{i}_{project}_run.log")
 			print(f"Running {project} ({j+1}/{total_repos})")
-			run_command_in_external_project("mvn clean test", project_dir, log_path)
+			run_command_in_external_project("mvn test", project_dir, log_path)
 			extract_joularjx_csv_files(project_dir, i)
 
 # Generate plots from csv files
