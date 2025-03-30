@@ -55,7 +55,8 @@ def add_test_packages_to_joularjx(project_dir=None):
 	# Find packages containing tests in external project
 	test_packages = set()
 	for java_tests in Path(project_dir).rglob("*.java"):
-		if "test" in java_tests.parent.name.lower():
+		relative_path = str(java_tests).replace(str(Path()), "")
+		if "test" in relative_path.lower():
 			with open(java_tests, "r") as tests_file:
 				for line in tests_file.readlines():
 					if line.startswith("package"):
@@ -154,7 +155,7 @@ def run_experiment(total_runs = 5):
 			project_dir = Path(os.getcwd(), "external_projects", project)
 			log_path = Path(os.getcwd(), "logs", f"{i}_{project}_run.log")
 			print(f"Running {project} ({j+1}/{total_repos})")
-			run_command_in_external_project("mvn test", project_dir, log_path)
+			run_command_in_external_project("mvn clean test", project_dir, log_path)
 			extract_joularjx_csv_files(project_dir, i)
 
 # Generate plots from csv files
