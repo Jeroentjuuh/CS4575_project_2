@@ -159,7 +159,8 @@ def run_experiment(total_runs = 5):
 			extract_joularjx_csv_files(project_dir, i)
 
 # Generate plots from csv files
-def generate_plots():
+# max_tests specifies the top X energy consuming tests to plot
+def generate_plots(max_tests=15):
 	print("Generating plots")
 	projects = {}
 	for repo in repos:
@@ -183,7 +184,7 @@ def generate_plots():
 				for line in csv_data:
 					test_name = ".".join(line[0].split(".")[-2:]).split("$")[0]
 					energy_consumption = float(line[1])
-					if "test" not in line[0].lower():
+					if "test" not in line[0].lower() or "lambda" in test_name:
 						continue
 					if test_name not in tests_energy_consumption:
 						tests_energy_consumption[test_name] = []
@@ -196,13 +197,17 @@ def generate_plots():
 		for test, energy_consumptions in tests_energy_consumption.items():
 			means.append((test, np.mean(energy_consumptions)))
 		means = sorted(means, key=lambda x: x[1], reverse=True)
-		boxes = [tests_energy_consumption[tup[0]] for tup in means[:10]]
-		labels = [tup[0].split(".")[-1] for tup in means[:10]]
+		if max_tests is not None and max_tests > 0:
+			means = means[:max_tests]
+		boxes = [tests_energy_consumption[tup[0]] for tup in means]
+		labels = [tup[0].split(".")[-1] for tup in means]
+
+		fix, ax = plt.subplots()
 		bplot = plt.boxplot(boxes, labels=labels)
 		plt.title(f"Test energy consumption of {project}")
 		plt.xlabel("Test name")
 		plt.ylabel("Energy consumption (J)")
-		plt.xticks(rotation=90)
+		plt.xticks(rotation=90, fontsize=6)
 		plt.tight_layout()
 		plt.savefig(Path("./plots", f"{project}.png"), dpi=300)
 		plt.close()
