@@ -33,6 +33,7 @@ repos = [
 	"https://github.com/decorators-squad/eo-yaml.git",
 	"https://github.com/dlsc-software-consulting-gmbh/preferencesfx.git",
 	"https://github.com/forcedotcom/dataloader.git",
+	"https://github.com/12joaquin/TestProject.git",
 	# "https://github.com/forge/roaster.git" # No tests
 ]
 
