@@ -7,6 +7,8 @@ import csv
 import sys
 import matplotlib.pyplot as plt
 import numpy as np
+from scipy.stats import shapiro
+from decimal import Decimal
 
 repos = [
 	# "https://github.com/allure-framework/allure-java.git"
@@ -159,10 +161,7 @@ def run_experiment(total_runs = 5):
 			run_command_in_external_project("mvn test", project_dir, log_path)
 			extract_joularjx_csv_files(project_dir, i)
 
-# Generate plots from csv files
-# max_tests specifies the top X energy consuming tests to plot
-def generate_plots(max_tests=15):
-	print("Generating plots")
+def get_project_runs_data():
 	projects = {}
 	for repo in repos:
 		projects[Path(repo).stem] = []
@@ -172,9 +171,10 @@ def generate_plots(max_tests=15):
 			if project in csv_file.name and "filtered-methods-energy" in csv_file.name and not csv_file.name.startswith("build"):
 				projects[project].append(csv_file)
 
+	projects_energy_consumption = {}
 	for project, csv_files in projects.items():
 		if len(csv_files) > 0:
-			print(f"Generating plot for {project}")
+			print(f"Parsing CSVs for {project}")
 		else:
 			print(f"No CSV files found for {project}, skipping...")
 			continue
@@ -193,7 +193,20 @@ def generate_plots(max_tests=15):
 		if len(tests_energy_consumption.keys()) == 0:
 			print(f"No tests found for {project}, skipping...")
 			continue
-		
+		else:
+			projects_energy_consumption[project] = tests_energy_consumption
+	return projects_energy_consumption
+
+# Generate plots from csv files
+# max_tests specifies the top X energy consuming tests to plot
+# data can be used to pass the data for generating plots (so it doesn't have to be re-read from disk)
+def generate_plots(max_tests=15, data=None):
+	print("Generating plots")
+	if data is None:
+		data = get_project_runs_data()
+
+	for project, tests_energy_consumption in data.items():
+		print(f"Generating plot for {project}")
 		means = []
 		for test, energy_consumptions in tests_energy_consumption.items():
 			means.append((test, np.mean(energy_consumptions)))
@@ -212,6 +225,43 @@ def generate_plots(max_tests=15):
 		plt.tight_layout()
 		plt.savefig(Path("./plots", f"{project}.png"), dpi=300)
 		plt.close()
+
+# Generate the latex appendix file with all plots and tables in it
+def generate_latex_appendix(max_tests=15, data=None):
+	if data is None:
+		data = get_project_runs_data()
+	
+	appendix = """\\subsection{Results from test runs}\\label{app:A}
+In this appendix we provide the boxplots showing the energy consumption across multiple test runs for all projects\n\n"""
+
+	for project, energy_data in data.items():
+		stats = []
+		for test, energy_consumptions in energy_data.items():
+			if len(energy_consumptions) < 3:
+				continue
+			d = {
+				"name": test,
+				"mean": np.mean(energy_consumptions),
+				"stddev": round(np.std(energy_consumptions), 3),
+				"shapwilks": shapiro(energy_consumptions)
+			}
+			stats.append(d)
+		stats = sorted(stats, key=lambda x: x["mean"], reverse=True)
+		appendix += f"\\begin{{figure*}}[h!]\n\\centering\n\\includegraphics[width=0.5\\linewidth]{{plots/{project}.png}}\n\\caption{{Energy consumption for {project} test suite}}\n\\label{{fig:{project}}}\n\end{{figure*}}\n\n"
+		appendix += f"\\begin{{table*}}[h!]\n\\centering\n\\begin{{tabular}}{{|c|c|c|c|}}\n\\hline\nTest name & Mean J & Std. dev. & $p$-value \\\\\n\hline\n"
+		# appendix += f""
+		for test in stats[:max_tests]:
+			if test["shapwilks"].pvalue > 0.05:
+				pvalue =  "{\\color{red}%.2e}" % Decimal(test["shapwilks"].pvalue)
+			else:
+				pvalue =  "%.2e" % Decimal(test["shapwilks"].pvalue)
+			appendix += "{0} & ${1}$ & ${2}$ & ${3}$ \\\\\n\hline\n".format(test["name"], round(test["mean"], 4), test["stddev"], pvalue)
+			pass
+		# appendix = appendix[:-10]
+		appendix += f"\\end{{tabular}}\n\\caption{{Detailed energy usage for {project}\\label{{tab:{project}}}}}\\\\\n\\end{{table*}}\n\n"
+	
+	with open("appendix-runs.tex", "w") as f:
+		f.write(appendix.replace("_", "\\_"))
 
 if __name__ == "__main__":
 	# Create directories if they don't exist
@@ -271,6 +321,8 @@ if __name__ == "__main__":
 
 	# Generate plots
 	if "--skip-plots" not in sys.argv:
-		generate_plots()
+		energy_data = get_project_runs_data()
+		generate_plots(data=energy_data)
+		generate_latex_appendix(data=energy_data)
 
 	print("done")
