@@ -258,7 +258,7 @@ In this appendix we provide the boxplots showing the energy consumption across m
 			appendix += "{0} & ${1}$ & ${2}$ & ${3}$ \\\\\n\hline\n".format(test["name"], round(test["mean"], 4), test["stddev"], pvalue)
 			pass
 		# appendix = appendix[:-10]
-		appendix += f"\\end{{tabular}}\n\\caption{{Detailed energy usage for {project}\\label{{tab:{project}}}}}\\\\\n\\end{{table*}}\n\n"
+		appendix += f"\\end{{tabular}}\n\\caption{{Detailed energy usage for {project}\\label{{tab:{project}}}}}\n\\end{{table*}}\n\n"
 	
 	with open("appendix-runs.tex", "w") as f:
 		f.write(appendix.replace("_", "\\_"))
