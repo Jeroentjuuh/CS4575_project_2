@@ -57,17 +57,27 @@ def add_test_packages_to_joularjx(project_dir=None):
 	
 	# Find packages containing tests in external project
 	test_packages = set()
+	test_methods = set()
 	for java_tests in Path(project_dir).rglob("*.java"):
 		relative_path = str(java_tests).replace(str(Path()), "")
 		if "test" in relative_path.lower():
 			with open(java_tests, "r") as tests_file:
+				looking_for_method = False
 				for line in tests_file.readlines():
 					if line.startswith("package"):
 						package_name = line.split(" ")[1][:-2]
 						test_packages.add(f"{package_name}.{Path(java_tests).stem}")
+					if (line.strip().startswith("@ParameterizedTest") or line.strip().startswith("@Test")) and not looking_for_method:
+						looking_for_method = True
+					elif looking_for_method:
+						if "(" in line and ")" in line and line.strip().endswith("{"):
+							method_name = line.split("(")[0].split(" ")[-1].strip()
+							test_methods.add(f"{package_name}.{java_tests.stem}.{method_name}")
+							looking_for_method = False
+	print(f"Found {len(test_methods)} tests in {project_dir.stem}")
 	with open(Path("config.properties"), "r") as joular_config:
 		data = joular_config.read()
-	data = data.replace("REPLACE-WITH-JOULAR-TEST-PACKAGES", ",".join(test_packages))
+	data = data.replace("REPLACE-WITH-JOULAR-TEST-PACKAGES", ",".join(test_methods))
 	with open(Path("config.properties"), "w") as joular_config:
 		joular_config.write(data)
 	
@@ -249,7 +259,6 @@ In this appendix we provide the boxplots showing the energy consumption across m
 		stats = sorted(stats, key=lambda x: x["mean"], reverse=True)
 		appendix += f"\\begin{{figure*}}[h!]\n\\centering\n\\includegraphics[width=0.5\\linewidth]{{plots/{project}.png}}\n\\caption{{Energy consumption for {project} test suite}}\n\\label{{fig:{project}}}\n\end{{figure*}}\n\n"
 		appendix += f"\\begin{{table*}}[h!]\n\\centering\n\\begin{{tabular}}{{|c|c|c|c|}}\n\\hline\nTest name & Mean J & Std. dev. & $p$-value \\\\\n\hline\n"
-		# appendix += f""
 		for test in stats[:max_tests]:
 			if test["shapwilks"].pvalue > 0.05:
 				pvalue =  "{\\color{red}%.2e}" % Decimal(test["shapwilks"].pvalue)
