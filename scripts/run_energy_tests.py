@@ -63,6 +63,7 @@ def add_test_packages_to_joularjx(project_dir=None):
 		if "test" in relative_path.lower():
 			with open(java_tests, "r") as tests_file:
 				looking_for_method = False
+				package_name = None
 				for line in tests_file.readlines():
 					if line.startswith("package"):
 						package_name = line.split(" ")[1][:-2]
@@ -72,7 +73,10 @@ def add_test_packages_to_joularjx(project_dir=None):
 					elif looking_for_method:
 						if "(" in line and ")" in line and line.strip().endswith("{"):
 							method_name = line.split("(")[0].split(" ")[-1].strip()
-							test_methods.add(f"{package_name}.{java_tests.stem}.{method_name}")
+							if package_name is not None:
+								test_methods.add(f"{package_name}.{java_tests.stem}.{method_name}")
+							else:
+								test_methods.add(f"{java_tests.stem}.{method_name}")
 							looking_for_method = False
 	print(f"Found {len(test_methods)} tests in {project_dir.stem}")
 	with open(Path("config.properties"), "r") as joular_config:
