@@ -9,7 +9,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 from scipy.stats import shapiro
 from decimal import Decimal
-from string import ascii_uppercase
 
 repos = [
 	# "https://github.com/allure-framework/allure-java.git"
@@ -226,7 +225,7 @@ def get_project_runs_data():
 # Generate plots from csv files
 # max_tests specifies the top X energy consuming tests to plot
 # data can be used to pass the data for generating plots (so it doesn't have to be re-read from disk)
-def generate_plots(max_tests=15, data=None, letters_instead_of_names=False):
+def generate_plots(max_tests=15, data=None, numbers_instead_of_names=False):
 	print("Generating plots")
 	if data is None:
 		data = get_project_runs_data()
@@ -240,8 +239,8 @@ def generate_plots(max_tests=15, data=None, letters_instead_of_names=False):
 		if max_tests is not None and max_tests > 0:
 			means = means[:max_tests]
 		boxes = [tests_energy_consumption[tup[0]] for tup in means]
-		if letters_instead_of_names:
-			labels = list(ascii_uppercase)[:len(boxes)]
+		if numbers_instead_of_names:
+			labels = list(range(1, len(boxes) + 1))
 		else:
 			labels = [tup[0].split(".")[-1] for tup in means]
 
@@ -250,7 +249,7 @@ def generate_plots(max_tests=15, data=None, letters_instead_of_names=False):
 		plt.title(f"Test energy consumption of {project}")
 		plt.xlabel("Test name")
 		plt.ylabel("Energy consumption (J)")
-		if not letters_instead_of_names:
+		if not numbers_instead_of_names:
 			plt.xticks(rotation=90, fontsize=6)
 		plt.tight_layout()
 		plt.savefig(Path("./plots", f"{project}.png"), dpi=300)
@@ -285,7 +284,7 @@ In this appendix we provide the boxplots showing the energy consumption across m
 				pvalue =  "{\\color{red}%.2e}" % Decimal(test["shapwilks"].pvalue)
 			else:
 				pvalue =  "%.2e" % Decimal(test["shapwilks"].pvalue)
-			appendix += "{0} & {1} & ${2}$ & ${3}$ & ${4}$ \\\\\n\hline\n".format(ascii_uppercase[i], test["name"], round(test["mean"], 4), test["stddev"], pvalue)
+			appendix += "{0} & {1} & ${2}$ & ${3}$ & ${4}$ \\\\\n\hline\n".format(i + 1, test["name"], round(test["mean"], 4), test["stddev"], pvalue)
 		# appendix = appendix[:-10]
 		appendix += f"\\end{{tabular}}\n\\caption{{Detailed energy usage for {project}\\label{{tab:{project}}}}}\n\\end{{table*}}\n\n"
 	
