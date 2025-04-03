@@ -143,6 +143,12 @@ def mvn_add_joularjx(project_dir, joularjx_path):
 	add_test_packages_to_joularjx(project_dir)
 	os.chdir(old_path)
 
+def reject_outliers(data, m=2.):
+    d = np.abs(data - np.median(data))
+    mdev = np.median(d)
+    s = d / (mdev if mdev else 1.)
+    return data[s < m]
+
 def extract_joularjx_csv_files(project_dir, prefix=0):
 	prefix = str(prefix)
 	# Move joularjx files to results folder
@@ -207,7 +213,13 @@ def get_project_runs_data():
 			print(f"No tests found for {project}, skipping...")
 			continue
 		else:
-			projects_energy_consumption[project] = tests_energy_consumption
+			for test_name, energy_consumptions in tests_energy_consumption.items():
+				no_outliers = reject_outliers(np.array(energy_consumptions))
+				if len(no_outliers) >= 3:
+					if project not in projects_energy_consumption:
+						projects_energy_consumption[project] = {}
+					projects_energy_consumption[project][test_name] = no_outliers
+
 	return projects_energy_consumption
 
 # Generate plots from csv files
@@ -241,6 +253,7 @@ def generate_plots(max_tests=15, data=None):
 
 # Generate the latex appendix file with all plots and tables in it
 def generate_latex_appendix(max_tests=15, data=None):
+	print("Generating LaTeX appendix...")
 	if data is None:
 		data = get_project_runs_data()
 	
