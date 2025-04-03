@@ -262,7 +262,7 @@ def generate_latex_appendix(max_tests=15, data=None):
 		data = get_project_runs_data()
 	
 	appendix = """\\subsection{Results from test runs}\\label{app:A}
-In this appendix we provide the boxplots showing the energy consumption across multiple test runs for all projects. We also provide the $p$-value for the Shapiro-Wilk test for normality.\n\n"""
+In this appendix we provide the boxplots showing the energy consumption across multiple test runs for all projects. We also provide the $p$-value for the Shapiro-Wilk test for normality. Because most project include hundreds or thousands of tests, we only show the 15 most energy consuming tests. The vast majority of tests barely use any energy.\n\n"""
 
 	for project, energy_data in data.items():
 		stats = []
