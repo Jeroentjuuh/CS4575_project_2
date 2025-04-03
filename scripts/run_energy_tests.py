@@ -350,7 +350,7 @@ if __name__ == "__main__":
 	# Generate plots
 	if "--skip-plots" not in sys.argv:
 		energy_data = get_project_runs_data()
-		generate_plots(data=energy_data, letters_instead_of_names=True)
+		generate_plots(data=energy_data, numbers_instead_of_names=True)
 		generate_latex_appendix(data=energy_data)
 
 	print("done")
