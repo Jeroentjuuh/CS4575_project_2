@@ -21,6 +21,7 @@ project_name,enabled
 "eclipse-ee4j/jaxrs-api",false
 "damianszczepanik/cucumber-reporting",true
 "decorators-squad/eo-yaml",true
-"dlsc-software-consulting-gmbh/preferencesfx",true
-"forcedotcom/dataloader",true
+"dlsc-software-consulting-gmbh/preferencesfx",false
+"forcedotcom/dataloader",false
 "forge/roaster",false
+"itsnotelena/testing-2",true

@@ -91,17 +91,26 @@ def add_test_packages_to_joularjx(project_dir=None):
 
 	# Find packages containing tests in external project
     test_packages = set()
+    test_methods = set()
     for java_tests in Path().rglob("*/test/**/*.java"):
-        print(f"Java test file found: {java_tests}")
-        print(f"Java test file parent: {java_tests.parent.name}")
         with open(java_tests, "r") as tests_file:
+            looking_for_method = False
+            package_name = None
             for line in tests_file.readlines():
                 if line.startswith("package"):
                     package_name = line.split(" ")[1][:-2]
                     test_packages.add(f"{package_name}.{Path(java_tests).stem}")
+                if (line.strip().startswith("@ParameterizedTest") or line.strip().startswith("@Test")) and not looking_for_method:
+                    looking_for_method = True
+                elif looking_for_method:
+                    if "(" in line and ")" in line and line.strip().endswith("{") and package_name is not None:
+                        method_name = line.split("(")[0].split(" ")[-1].strip()
+                        test_methods.add(f"{package_name}.{java_tests.stem}.{method_name}")
+                        looking_for_method = False
+    print(f"Found {len(test_methods)} tests in {project_dir.stem}")
     with open(Path("config.properties"), "r") as joular_config:
         data = joular_config.read()
-    data = data.replace("REPLACE-WITH-JOULAR-TEST-PACKAGES", ",".join(test_packages))
+    data = data.replace("REPLACE-WITH-JOULAR-TEST-PACKAGES", ",".join(test_methods))
     with open(Path("config.properties"), "w") as joular_config:
         joular_config.write(data)
 	
