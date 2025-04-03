@@ -180,7 +180,6 @@ def get_project_runs_data():
 	for repo in repos:
 		projects[Path(repo).stem] = []
 	for csv_file in Path("./results").glob("*.csv"):
-		# print(csv_file.name)
 		for project in projects.keys():
 			if project in csv_file.name and "filtered-methods-energy" in csv_file.name and not csv_file.name.startswith("build"):
 				projects[project].append(csv_file)
