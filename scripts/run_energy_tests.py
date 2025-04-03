@@ -9,6 +9,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from scipy.stats import shapiro
 from decimal import Decimal
+from string import ascii_uppercase
 
 repos = [
 	# "https://github.com/allure-framework/allure-java.git"
@@ -225,7 +226,7 @@ def get_project_runs_data():
 # Generate plots from csv files
 # max_tests specifies the top X energy consuming tests to plot
 # data can be used to pass the data for generating plots (so it doesn't have to be re-read from disk)
-def generate_plots(max_tests=15, data=None):
+def generate_plots(max_tests=15, data=None, letters_instead_of_names=False):
 	print("Generating plots")
 	if data is None:
 		data = get_project_runs_data()
@@ -239,14 +240,18 @@ def generate_plots(max_tests=15, data=None):
 		if max_tests is not None and max_tests > 0:
 			means = means[:max_tests]
 		boxes = [tests_energy_consumption[tup[0]] for tup in means]
-		labels = [tup[0].split(".")[-1] for tup in means]
+		if letters_instead_of_names:
+			labels = list(ascii_uppercase)[:len(boxes)]
+		else:
+			labels = [tup[0].split(".")[-1] for tup in means]
 
 		fix, ax = plt.subplots()
 		bplot = plt.boxplot(boxes, labels=labels)
 		plt.title(f"Test energy consumption of {project}")
 		plt.xlabel("Test name")
 		plt.ylabel("Energy consumption (J)")
-		plt.xticks(rotation=90, fontsize=6)
+		if not letters_instead_of_names:
+			plt.xticks(rotation=90, fontsize=6)
 		plt.tight_layout()
 		plt.savefig(Path("./plots", f"{project}.png"), dpi=300)
 		plt.close()
@@ -258,7 +263,7 @@ def generate_latex_appendix(max_tests=15, data=None):
 		data = get_project_runs_data()
 	
 	appendix = """\\subsection{Results from test runs}\\label{app:A}
-In this appendix we provide the boxplots showing the energy consumption across multiple test runs for all projects\n\n"""
+In this appendix we provide the boxplots showing the energy consumption across multiple test runs for all projects. We also provide the $p$-value for the Shapiro-Wilk test for normality.\n\n"""
 
 	for project, energy_data in data.items():
 		stats = []
@@ -273,15 +278,14 @@ In this appendix we provide the boxplots showing the energy consumption across m
 			}
 			stats.append(d)
 		stats = sorted(stats, key=lambda x: x["mean"], reverse=True)
-		appendix += f"\\begin{{figure*}}[h!]\n\\centering\n\\includegraphics[width=0.5\\linewidth]{{plots/{project}.png}}\n\\caption{{Energy consumption for {project} test suite}}\n\\label{{fig:{project}}}\n\end{{figure*}}\n\n"
-		appendix += f"\\begin{{table*}}[h!]\n\\centering\n\\begin{{tabular}}{{|c|c|c|c|}}\n\\hline\nTest name & Mean J & Std. dev. & $p$-value \\\\\n\hline\n"
-		for test in stats[:max_tests]:
+		appendix += f"\\begin{{figure*}}[h!]\n\\centering\n\\includegraphics[width=0.5\\linewidth]{{plots/{project}.png}}\n\\caption{{Energy consumption for {project} test suite. Corresponding tests can be found in table \\ref{{tab:{project}}}}}\n\\label{{fig:{project}}}\n\end{{figure*}}\n\n"
+		appendix += f"\\begin{{table*}}[h!]\n\\centering\n\\begin{{tabular}}{{|c|l|c|c|c|}}\n\\hline\nIndex & Test name & Mean J & Std. dev. & $p$-value \\\\\n\hline\n"
+		for i, test in enumerate(stats[:max_tests]):
 			if test["shapwilks"].pvalue > 0.05:
 				pvalue =  "{\\color{red}%.2e}" % Decimal(test["shapwilks"].pvalue)
 			else:
 				pvalue =  "%.2e" % Decimal(test["shapwilks"].pvalue)
-			appendix += "{0} & ${1}$ & ${2}$ & ${3}$ \\\\\n\hline\n".format(test["name"], round(test["mean"], 4), test["stddev"], pvalue)
-			pass
+			appendix += "{0} & {1} & ${2}$ & ${3}$ & ${4}$ \\\\\n\hline\n".format(ascii_uppercase[i], test["name"], round(test["mean"], 4), test["stddev"], pvalue)
 		# appendix = appendix[:-10]
 		appendix += f"\\end{{tabular}}\n\\caption{{Detailed energy usage for {project}\\label{{tab:{project}}}}}\n\\end{{table*}}\n\n"
 	
@@ -347,7 +351,7 @@ if __name__ == "__main__":
 	# Generate plots
 	if "--skip-plots" not in sys.argv:
 		energy_data = get_project_runs_data()
-		generate_plots(data=energy_data)
+		generate_plots(data=energy_data, letters_instead_of_names=True)
 		generate_latex_appendix(data=energy_data)
 
 	print("done")
