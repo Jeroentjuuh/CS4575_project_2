@@ -38,15 +38,11 @@ def run_experiments_energibrdige(project, project_path, amount_of_tests=30):
 					methods[method] = None
 				break
 	for i in range(amount_of_tests):
-		# print("Sleeping for 30 seconds to allow the system to stabilize...")
-		# sleep(30)
 		print(f"{project} experiment run {i+1}/{amount_of_tests}")
 		for method in methods.keys():
 			runner.start()
-			sleep(1)
 			print(f"Running method {method}")
 			run_command_in_external_project(f"mvn -Dtest={method.split('.')[-2]}#{method.split('.')[-1]} test", project_path)
-			sleep(1)
 			energy, duration = runner.stop()
 			print(f"Energy: {energy}, Duration: {duration}")
 			methods[method] = energy
@@ -58,6 +54,12 @@ def run_experiments_energibrdige(project, project_path, amount_of_tests=30):
 				writer.writerow([method, energy])
 
 if __name__ == "__main__":
+	# Warmup the CPU by doing 10 iterations of Fibonacci
+	for i in range(10):
+		fib = 0
+		for j in range(250000):
+			fib += j
+
 	joularjx_dir = Path(os.getcwd(), "joularjx")
 	joularjx_path = Path(joularjx_dir, "target", list(filter(lambda x: x.endswith(".jar") and "joularjx" in x, os.listdir(Path(joularjx_dir, "target"))))[0])
 	print(f"JoularJX path: {joularjx_path}")
@@ -81,3 +83,6 @@ if __name__ == "__main__":
 				run_experiments_energibrdige(project, project_path)
 			else:
 				print("Please specify --joularjx or --energi-bridge to run the experiments.")
+
+			# Sleep for 30 seconds after each experiment to allow the system to stabilize
+			sleep(30)
